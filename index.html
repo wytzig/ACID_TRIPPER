@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Acid Trip</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            overflow: hidden;
+            font-family: 'Courier New', monospace;
+        }
+        
+        #canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 2;
+            mix-blend-mode: screen;
+        }
+        
+        .glitch-text {
+            position: absolute;
+            font-size: 2rem;
+            font-weight: bold;
+            color: #00ff00;
+            text-shadow: 0 0 20px #00ff00;
+            animation: glitch 0.3s infinite;
+        }
+        
+        @keyframes glitch {
+            0% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(-2px, -2px); }
+            60% { transform: translate(2px, 2px); }
+            80% { transform: translate(2px, -2px); }
+            100% { transform: translate(0); }
+        }
+        
+        .flash {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: white;
+            opacity: 0;
+            z-index: 10;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="overlay" id="overlay"></div>
+    <div class="flash" id="flash"></div>
+    
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const overlay = document.getElementById('overlay');
+        const flash = document.getElementById('flash');
+        
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        // Color palettes for maximum psychedelic effect
+        const colors = [
+            '#ff0080', '#00ff80', '#8000ff', '#ff8000', 
+            '#0080ff', '#ff0040', '#40ff00', '#ff4000',
+            '#00ffff', '#ff00ff', '#ffff00', '#ff8080'
+        ];
+        
+        let particles = [];
+        let time = 0;
+        
+        // Particle system for trippy effects
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.vx = (Math.random() - 0.5) * 4;
+                this.vy = (Math.random() - 0.5) * 4;
+                this.size = Math.random() * 10 + 2;
+                this.color = colors[Math.floor(Math.random() * colors.length)];
+                this.life = 1;
+                this.decay = Math.random() * 0.02 + 0.005;
+            }
+            
+            update() {
+                this.x += this.vx + Math.sin(time * 0.01 + this.x * 0.01) * 2;
+                this.y += this.vy + Math.cos(time * 0.01 + this.y * 0.01) * 2;
+                this.life -= this.decay;
+                
+                if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+                if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+            }
+            
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.life;
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+        
+        // Initialize particles
+        for (let i = 0; i < 100; i++) {
+            particles.push(new Particle());
+        }
+        
+        // Trippy background patterns
+        function drawPsychedelicBackground() {
+            const gradient = ctx.createRadialGradient(
+                canvas.width/2, canvas.height/2, 0,
+                canvas.width/2, canvas.height/2, Math.max(canvas.width, canvas.height)/2
+            );
+            
+            const color1 = colors[Math.floor(time * 0.01) % colors.length];
+            const color2 = colors[Math.floor(time * 0.02) % colors.length];
+            
+            gradient.addColorStop(0, color1 + '40');
+            gradient.addColorStop(1, color2 + '20');
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+        
+        // Strobing geometric shapes
+        function drawGeometry() {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            
+            for (let i = 0; i < 8; i++) {
+                const angle = (time * 0.02 + i * Math.PI / 4);
+                const radius = 100 + Math.sin(time * 0.03) * 50;
+                const x = centerX + Math.cos(angle) * radius;
+                const y = centerY + Math.sin(angle) * radius;
+                
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(time * 0.05);
+                ctx.fillStyle = colors[i % colors.length] + '80';
+                ctx.fillRect(-20, -20, 40, 40);
+                ctx.restore();
+            }
+        }
+        
+        // Random flashing
+        function randomFlash() {
+            if (Math.random() < 0.02) {
+                flash.style.opacity = '0.8';
+                setTimeout(() => {
+                    flash.style.opacity = '0';
+                }, 50 + Math.random() * 100);
+            }
+        }
+        
+        // Glitch text generation
+        function spawnGlitchText() {
+            if (Math.random() < 0.05) {
+                const texts = ['SYSTEM ERROR', 'REALITY.EXE', 'LOADING...', 'GLITCH', 'ACID.JS', '404 MIND NOT FOUND'];
+                const text = document.createElement('div');
+                text.className = 'glitch-text';
+                text.textContent = texts[Math.floor(Math.random() * texts.length)];
+                text.style.left = Math.random() * (window.innerWidth - 200) + 'px';
+                text.style.top = Math.random() * (window.innerHeight - 50) + 'px';
+                text.style.color = colors[Math.floor(Math.random() * colors.length)];
+                
+                overlay.appendChild(text);
+                
+                setTimeout(() => {
+                    if (text.parentNode) {
+                        text.parentNode.removeChild(text);
+                    }
+                }, 2000 + Math.random() * 3000);
+            }
+        }
+        
+        // Main animation loop
+        function animate() {
+            time++;
+            
+            // Clear with trailing effect for smoother psychedelic motion
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            drawPsychedelicBackground();
+            drawGeometry();
+            
+            // Update and draw particles
+            particles = particles.filter(p => p.life > 0);
+            
+            while (particles.length < 100) {
+                particles.push(new Particle());
+            }
+            
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            
+            randomFlash();
+            spawnGlitchText();
+            
+            requestAnimationFrame(animate);
+        }
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+        
+        // Start the acid trip
+        animate();
+        
+        // Click to intensify
+        document.addEventListener('click', () => {
+            for (let i = 0; i < 50; i++) {
+                particles.push(new Particle());
+            }
+            
+            // Mega flash
+            flash.style.opacity = '1';
+            setTimeout(() => {
+                flash.style.opacity = '0';
+            }, 150);
+        });
+    </script>
+</body>
+</html>
